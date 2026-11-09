@@ -1,6 +1,8 @@
+from dataclasses import dataclass, field
 import string
 import math
 import re
+
 
 COMMON_WORDS = {
     "password", "passw0rd", "qwerty", "letmein", "welcome", "admin",
@@ -70,4 +72,43 @@ def entropy_bits(password: str) -> float:
     if not password or pool == 0:
         return 0.0
     return len(password) * math.log2(pool)
+
+LABELS = ["Very weak", "Weak", "Fair", "Strong", "Very strong"]
+
+
+@dataclass
+class StrengthReport:
+    length: int
+    entropy_bits: float
+    score: int  # 0 (very weak) .. 4 (very strong)
+    label: str
+    warnings: list[str] = field(default_factory=list)
+
+
+def analyse(password: str) -> StrengthReport:
+    warnings = find_warnings(password)
+    bits = entropy_bits(password)
+
+    if bits < 28:
+        score = 0
+    elif bits < 36:
+        score = 1
+    elif bits < 60:
+        score = 2
+    elif bits < 80:
+        score = 3
+    else:
+        score = 4
+
+    # Length warnings are already reflected in entropy; patterns are not.
+    penalties = [w for w in warnings if not w.startswith(("Shorter", "Under"))]
+    score = max(0, score - len(penalties))
+
+    return StrengthReport(
+        length=len(password),
+        entropy_bits=round(bits, 1),
+        score=score,
+        label=LABELS[score],
+        warnings=warnings,
+    )
 
