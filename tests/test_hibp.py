@@ -51,6 +51,18 @@ class TestParsing(unittest.TestCase):
         with self.assertRaises(BreachCheckError):
             parse_range_response("AAAA-3")
 
+class TestKAnonymity(unittest.TestCase):
+    def test_only_five_char_prefix_is_sent(self):
+        api = FakeAPI()
+        breach_count("password", api)
+        self.assertEqual(api.requests, ["5BAA6"])
+
+    def test_password_never_sent(self):
+        api = FakeAPI()
+        breach_count("hunter2", api)
+        for sent in api.requests:
+            self.assertNotIn("hunter2", sent)
+            self.assertEqual(len(sent), 5)
 
 if __name__ == "__main__":
     unittest.main()
