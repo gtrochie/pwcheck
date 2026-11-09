@@ -9,7 +9,10 @@ from .strength import analyse
 def check_one(password: str, offline: bool = False, fetch=http_fetch) -> dict:
     result = {"strength": analyse(password), "breaches": None, "error": None}
     if not offline:
-        result["breaches"] = breach_count(password, fetch)
+        try:
+            result["breaches"] = breach_count(password, fetch)
+        except BreachCheckError as exc:
+            result["error"] = str(exc)
     return result
 
 
@@ -89,6 +92,9 @@ def main(argv=None, fetch=http_fetch) -> int:
     if args.file:
         return audit_file(args.file, args.offline, fetch)
     pw = getpass.getpass("Password to check (input hidden): ")
+    if not pw:
+        print("error: empty password", file=sys.stderr)
+        return EXIT_ERROR
     result = check_one(pw, args.offline, fetch)
     print(render(result))
     return exit_code(result)

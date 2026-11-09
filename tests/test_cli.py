@@ -4,7 +4,7 @@ from contextlib import redirect_stdout
 from pwcheck import cli
 from pwcheck.hibp import split_hash
 from tests.test_hibp import PASSWORD_HASH, FakeAPI
-
+from pwcheck.hibp import BreachCheckError
 
 class TestCLI(unittest.TestCase):
     def test_breached_password(self):
@@ -34,6 +34,16 @@ class TestCLI(unittest.TestCase):
             self.assertEqual(code, cli.EXIT_OK)
         finally:
             os.unlink(path)
+
+    def test_network_failure_is_reported_not_crashed(self):
+        def broken(prefix):
+            raise BreachCheckError("network down")
+
+        result = cli.check_one("whatever", fetch=broken)
+        self.assertIsNone(result["breaches"])
+        self.assertIn("network down", result["error"])
+        self.assertNotIn("not found", cli.render(result))
+        self.assertEqual(cli.exit_code(result), cli.EXIT_ERROR)
 
 
 if __name__ == "__main__":
