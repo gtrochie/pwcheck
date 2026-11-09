@@ -1,5 +1,8 @@
 import unittest
-from pwcheck.strength import charset_size,entropy_bits, find_warnings,has_sequence
+from pwcheck.strength import charset_size,entropy_bits, find_warnings,has_sequence, analyse
+
+if __name__ == "__main__":
+    unittest.main()
 
 
 class TestCharset(unittest.TestCase):
@@ -33,6 +36,17 @@ class TestWarnings(unittest.TestCase):
     def test_repeats(self):
         warnings = find_warnings("aaa-Secure-99")
         self.assertTrue(any("repeated" in w for w in warnings))
+
+class TestAnalyse(unittest.TestCase):
+    def test_common_password_is_very_weak(self):
+        report = analyse("password")
+        self.assertEqual(report.score, 0)
+        self.assertEqual(report.label, "Very weak")
+
+    def test_passphrase_is_strong(self):
+        report = analyse("Correct-Horse-Battery-Staple-Mopane-7")
+        self.assertGreaterEqual(report.score, 3)
+        self.assertEqual(report.warnings, [])
 
 if __name__ == "__main__":
     unittest.main()
