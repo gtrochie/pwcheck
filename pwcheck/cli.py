@@ -6,19 +6,20 @@ from .hibp import BreachCheckError, breach_count, http_fetch
 from .strength import analyse
 
 
-def check_one(password: str, fetch=http_fetch) -> dict:
-    return {
-        "strength": analyse(password),
-        "breaches": breach_count(password, fetch),
-        "error": None,
-    }
+def check_one(password: str, offline: bool = False, fetch=http_fetch) -> dict:
+    result = {"strength": analyse(password), "breaches": None, "error": None}
+    if not offline:
+        result["breaches"] = breach_count(password, fetch)
+    return result
 
 
 def build_parser() -> argparse.ArgumentParser:
-    return argparse.ArgumentParser(
+    p = argparse.ArgumentParser(
         prog="pwcheck",
         description="Breach-aware password checker (HIBP k-anonymity + local strength scoring).",
     )
+    p.add_argument("--offline", action="store_true", help="skip the breach lookup")
+    return p
 
 EXIT_OK = 0
 EXIT_BREACHED = 1
@@ -62,10 +63,9 @@ def render(result: dict, label: str | None = None) -> str:
     lines.append(f"Verdict  : {verdict(result)}")
     return "\n".join(lines)
 
-
 def main(argv=None, fetch=http_fetch) -> int:
-    build_parser().parse_args(argv)
+    args = build_parser().parse_args(argv)
     pw = getpass.getpass("Password to check (input hidden): ")
-    result = check_one(pw, fetch)
+    result = check_one(pw, args.offline, fetch)
     print(render(result))
     return exit_code(result)
