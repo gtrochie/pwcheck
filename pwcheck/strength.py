@@ -1,6 +1,28 @@
 import string
 import math
 
+COMMON_WORDS = {
+    "password", "passw0rd", "qwerty", "letmein", "welcome", "admin",
+    "iloveyou", "monkey", "dragon", "football", "baseball", "sunshine",
+    "princess", "master", "login", "abc123", "123456", "111111",
+}
+
+
+def find_warnings(password: str) -> list[str]:
+    """Return human-readable warnings about weaknesses in the password."""
+    warnings: list[str] = []
+    lowered = password.lower()
+
+    if len(password) < 8:
+        warnings.append("Shorter than 8 characters.")
+    elif len(password) < 12:
+        warnings.append("Under 12 characters; longer is much harder to crack.")
+
+    if any(word in lowered for word in COMMON_WORDS):
+        warnings.append("Contains a very common password or word.")
+
+    return warnings
+
 def charset_size(password: str) -> int:
     """Estimate how many possible characters the password draws from."""
     size = 0
