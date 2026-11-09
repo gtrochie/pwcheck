@@ -1,7 +1,29 @@
 import unittest
-from pwcheck.hibp import sha1_hex, split_hash, parse_range_response,BreachCheckError
+from pwcheck.hibp import sha1_hex, split_hash, parse_range_response,BreachCheckError,breach_count
 
 PASSWORD_HASH = "5BAA61E4C9B93F3F0682250B6CF8331B7EE68FD8"
+
+class FakeAPI:
+    """Pretends to be HIBP and remembers what it was sent."""
+
+    def __init__(self, body: str = ""):
+        self.body = body
+        self.requests: list[str] = []
+
+    def __call__(self, prefix: str) -> str:
+        self.requests.append(prefix)
+        return self.body
+
+
+class TestBreachCount(unittest.TestCase):
+    def test_found(self):
+        _, suffix = split_hash(PASSWORD_HASH)
+        api = FakeAPI(f"0018A45C4D1DEF81644B54AB7F969B88D65:1\r\n{suffix}:9545824\r\n")
+        self.assertEqual(breach_count("password", api), 9545824)
+
+    def test_not_found(self):
+        api = FakeAPI("0018A45C4D1DEF81644B54AB7F969B88D65:1\r\n")
+        self.assertEqual(breach_count("password", api), 0)
 
 
 class TestHashing(unittest.TestCase):

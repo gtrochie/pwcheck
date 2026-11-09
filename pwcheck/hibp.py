@@ -1,6 +1,7 @@
 import hashlib
 import urllib.error
 import urllib.request
+from typing import Callable
 
 PREFIX_LEN = 5
 
@@ -49,3 +50,9 @@ def http_fetch(prefix: str, timeout: float = 10.0) -> str:
             return resp.read().decode("utf-8")
     except (urllib.error.URLError, TimeoutError) as exc:
         raise BreachCheckError(f"could not reach breach API: {exc}") from exc
+    
+def breach_count(password: str, fetch: Callable[[str], str] = http_fetch) -> int:
+    """Return how many times this password appears in known breaches (0 = none)."""
+    prefix, suffix = split_hash(sha1_hex(password))
+    matches = parse_range_response(fetch(prefix))
+    return matches.get(suffix, 0)
