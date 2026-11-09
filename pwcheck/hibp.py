@@ -1,4 +1,7 @@
 import hashlib
+import urllib.error
+import urllib.request
+
 PREFIX_LEN = 5
 
 class BreachCheckError(Exception):
@@ -28,3 +31,21 @@ def parse_range_response(body: str) -> dict[str, int]:
         if n > 0:
             results[suffix.strip().upper()] = n
     return results
+
+API_URL = "https://api.pwnedpasswords.com/range/{prefix}"
+USER_AGENT = "pwcheck-student-project/1.0"
+
+
+def http_fetch(prefix: str, timeout: float = 10.0) -> str:
+    """Fetch breached hash suffixes for a 5-char prefix from HIBP."""
+    if len(prefix) != PREFIX_LEN:
+        raise ValueError("prefix must be exactly 5 characters")
+    req = urllib.request.Request(
+        API_URL.format(prefix=prefix),
+        headers={"User-Agent": USER_AGENT, "Add-Padding": "true"},
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            return resp.read().decode("utf-8")
+    except (urllib.error.URLError, TimeoutError) as exc:
+        raise BreachCheckError(f"could not reach breach API: {exc}") from exc
