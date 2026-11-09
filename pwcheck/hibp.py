@@ -10,3 +10,14 @@ def split_hash(full_hash: str) -> tuple[str, str]:
 def sha1_hex(password: str) -> str:
     """Return the uppercase SHA-1 hex digest of a password."""
     return hashlib.sha1(password.encode("utf-8")).hexdigest().upper()
+
+def parse_range_response(body: str) -> dict[str, int]:
+    """Parse 'SUFFIX:COUNT' lines into {suffix: count}."""
+    results: dict[str, int] = {}
+    for raw in body.splitlines():
+        line = raw.strip()
+        if not line:
+            continue
+        suffix, _, count = line.partition(":")
+        results[suffix.strip().upper()] = int(count)
+    return results
