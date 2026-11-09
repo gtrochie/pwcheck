@@ -19,5 +19,7 @@ def parse_range_response(body: str) -> dict[str, int]:
         if not line:
             continue
         suffix, _, count = line.partition(":")
-        results[suffix.strip().upper()] = int(count)
+        n = int(count)
+        if n > 0:
+            results[suffix.strip().upper()] = n
     return results

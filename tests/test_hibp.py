@@ -21,6 +21,10 @@ class TestParsing(unittest.TestCase):
         body = "AAAA:3\r\nbbbb:12\r\n"
         self.assertEqual(parse_range_response(body), {"AAAA": 3, "BBBB": 12})
 
+    def test_skips_padding(self):
+        body = "AAAA:3\r\nBBBB:0\r\n"
+        self.assertEqual(parse_range_response(body), {"AAAA": 3})
+
 
 if __name__ == "__main__":
     unittest.main()
