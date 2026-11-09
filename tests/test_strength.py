@@ -1,5 +1,5 @@
 import unittest
-from pwcheck.strength import charset_size,entropy_bits, find_warnings
+from pwcheck.strength import charset_size,entropy_bits, find_warnings,has_sequence
 
 
 class TestCharset(unittest.TestCase):
@@ -23,6 +23,16 @@ class TestWarnings(unittest.TestCase):
     def test_common_word(self):
         warnings = find_warnings("MyPassword2026")
         self.assertTrue(any("common" in w for w in warnings))
+    
+    def test_sequence(self):
+        self.assertTrue(has_sequence("Xyabcd99!!"))
+        self.assertTrue(has_sequence("zz4321zz"))
+        self.assertTrue(has_sequence("myqwerpass"))
+        self.assertFalse(has_sequence("Tq8#mZ2!"))
+
+    def test_repeats(self):
+        warnings = find_warnings("aaa-Secure-99")
+        self.assertTrue(any("repeated" in w for w in warnings))
 
 if __name__ == "__main__":
     unittest.main()
