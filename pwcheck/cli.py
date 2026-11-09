@@ -19,6 +19,7 @@ def build_parser() -> argparse.ArgumentParser:
         description="Breach-aware password checker (HIBP k-anonymity + local strength scoring).",
     )
     p.add_argument("--offline", action="store_true", help="skip the breach lookup")
+    p.add_argument("--file", help="audit passwords from a file, one per line")
     return p
 
 EXIT_OK = 0
@@ -63,8 +64,30 @@ def render(result: dict, label: str | None = None) -> str:
     lines.append(f"Verdict  : {verdict(result)}")
     return "\n".join(lines)
 
+def audit_file(path: str, offline: bool, fetch) -> int:
+    try:
+        with open(path, encoding="utf-8") as fh:
+            passwords = [line.rstrip("\n") for line in fh if line.strip()]
+    except OSError as exc:
+        print(f"error: {exc}", file=sys.stderr)
+        return EXIT_ERROR
+
+    worst = EXIT_OK
+    for i, pw in enumerate(passwords, start=1):
+        result = check_one(pw, offline, fetch)
+        print(render(result, label=f"line {i}"))
+        print()
+        code = exit_code(result)
+        if code == EXIT_BREACHED:
+            worst = EXIT_BREACHED
+        elif code == EXIT_ERROR and worst == EXIT_OK:
+            worst = EXIT_ERROR
+    return worst
+
 def main(argv=None, fetch=http_fetch) -> int:
     args = build_parser().parse_args(argv)
+    if args.file:
+        return audit_file(args.file, args.offline, fetch)
     pw = getpass.getpass("Password to check (input hidden): ")
     result = check_one(pw, args.offline, fetch)
     print(render(result))

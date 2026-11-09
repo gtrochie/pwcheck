@@ -1,5 +1,6 @@
 import unittest
-
+import io, os, tempfile
+from contextlib import redirect_stdout
 from pwcheck import cli
 from pwcheck.hibp import split_hash
 from tests.test_hibp import PASSWORD_HASH, FakeAPI
@@ -18,6 +19,21 @@ class TestCLI(unittest.TestCase):
         result = cli.check_one("whatever", offline=True, fetch=api)
         self.assertIsNone(result["breaches"])
         self.assertEqual(api.requests, [])
+
+    def test_file_mode_never_prints_passwords(self):
+        with tempfile.NamedTemporaryFile("w", delete=False, suffix=".txt") as fh:
+            fh.write("SuperSecretValue123\nanotherOne!\n")
+            path = fh.name
+        try:
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                code = cli.main(["--file", path], fetch=FakeAPI())
+            out = buf.getvalue()
+            self.assertNotIn("SuperSecretValue123", out)
+            self.assertIn("line 1", out)
+            self.assertEqual(code, cli.EXIT_OK)
+        finally:
+            os.unlink(path)
 
 
 if __name__ == "__main__":
